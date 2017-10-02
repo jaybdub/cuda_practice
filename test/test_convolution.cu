@@ -8,6 +8,15 @@ void Print(float * x, int x_len) {
     cout << x[i] << endl;
 }
 
+void PrintImage(Image & image) {
+  for (int i = 0; i < image.height; i++) {
+    for (int j = 0; j < image.width; j++) {
+      cout << *image.At(i, j) << "\t";
+    }
+    cout << endl;
+  }
+}
+
 void TestCorrelate1D() {
   const size_t N = 20;
   float a[N], b[N];
@@ -29,7 +38,39 @@ void TestCorrelate1D() {
   cudaFree(d_b);
 }
 
+void TestCorrelate2D() {
+  Image A(5, 5), W(3, 3), B(5, 5);
+  A.data = (float*) malloc(A.Size());
+  B.data = (float*) malloc(A.Size());
+  W.data = (float*) malloc(A.Size());
+  for (int i = 0; i < A.height; i++) {
+    for (int j = 0; j < A.width; j++) {
+      *A.At(i, j) = i * A.width + j; 
+    }
+  }
+  for (int i = 0; i < W.height; i++) {
+    for (int j = 0; j < W.width; j++) {
+      *W.At(i, j) = 1;
+    }
+  }
+  PrintImage(A);
+  PrintImage(W);
+  Image * d_A, * d_W, * d_B; // device pointers
+
+  //free memory
+  free(A.data);
+  free(B.data);
+  free(W.data);
+  cudaFree(d_A.data);
+  cudaFree(d_B.data);
+  cudaFree(d_W.data);
+  cudaFree(d_A);
+  cudaFree(d_B);
+  cudaFree(d_W);
+}
+
 int main() {
   TestCorrelate1D();
+  TestCorrelate2D();
   return 0;
 }
