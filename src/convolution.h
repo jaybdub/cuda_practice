@@ -1,7 +1,7 @@
 #ifndef CONVOLUTION_H
 #define CONVOLUTION_H
 
-__global__ void Convolve1D(float * x, int x_len,
+__global__ void Correlate1D(float * x, int x_len,
     float * w, int w_len, float * y) {
   int y_idx = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -15,5 +15,7 @@ __global__ void Convolve1D(float * x, int x_len,
       y[y_idx] += w[w_idx] * x[x_idx];
   }
 }
+
+
 
 #endif  // CONVOLUTION_H

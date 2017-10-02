@@ -8,7 +8,7 @@ void Print(float * x, int x_len) {
     cout << x[i] << endl;
 }
 
-void TestConvolution1D() {
+void TestCorrelate1D() {
   const size_t N = 20;
   float a[N], b[N];
   for (int i = 0; i < N; i++)
@@ -22,7 +22,7 @@ void TestConvolution1D() {
   cudaMalloc(&d_w, N_w * sizeof(float));
   cudaMemcpy(d_a, a, size, cudaMemcpyHostToDevice); 
   cudaMemcpy(d_w, w, N_w * sizeof(float), cudaMemcpyHostToDevice);
-  Convolve1D<<<N, 1>>>(d_a, N, d_w, N_w, d_b);
+  Correlate1D<<<N, 1>>>(d_a, N, d_w, N_w, d_b);
   cudaMemcpy(b, d_b, size, cudaMemcpyDeviceToHost);
   Print(b, N);  
   cudaFree(d_a);
@@ -30,6 +30,6 @@ void TestConvolution1D() {
 }
 
 int main() {
-  TestConvolution1D();
+  TestCorrelate1D();
   return 0;
 }
