@@ -1,4 +1,5 @@
 cd build
 cmake ..
 make
-./test_convolution
+cd ..
+./build/test_convolution
