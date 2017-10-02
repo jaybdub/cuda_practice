@@ -55,7 +55,17 @@ void TestCorrelate2D() {
   }
   PrintImage(A);
   PrintImage(W);
-  Image * d_A, * d_W, * d_B; // device pointers
+  Image d_A(5, 5), d_W(3, 3), d_B(5, 5); // device pointers
+  cudaMalloc(&d_A.data, d_A.Size());
+  cudaMalloc(&d_W.data, d_W.Size());
+  cudaMalloc(&d_B.data, d_B.Size());
+  cudaMemcpy(d_A.data, A.data, A.Size(), cudaMemcpyHostToDevice);
+  cudaMemcpy(d_W.data, W.data, W.Size(), cudaMemcpyHostToDevice);
+  dim3 threadsPerBlock(5, 5);
+  Correlate2D<<<1, threadsPerBlock>>>(d_A, d_W, d_B);
+  cudaMemcpy(B.data, d_B.data, d_B.Size(), cudaMemcpyDeviceToHost);
+
+  PrintImage(B);
 
   //free memory
   free(A.data);
@@ -64,9 +74,6 @@ void TestCorrelate2D() {
   cudaFree(d_A.data);
   cudaFree(d_B.data);
   cudaFree(d_W.data);
-  cudaFree(d_A);
-  cudaFree(d_B);
-  cudaFree(d_W);
 }
 
 int main() {

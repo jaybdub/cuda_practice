@@ -34,21 +34,21 @@ __global__ void Correlate1D(float * x, int x_len,
   }
 }
 
-__global__ void Correlate2D(Image * X, Image * W,
-    Image * Y) {
+__global__ void Correlate2D(Image X, Image W,
+    Image Y) {
   const int Y_x = threadIdx.x;
   const int Y_y = threadIdx.y;
-  float * y = Y->At(Y_x, Y_y); 
+  float * y = Y.At(Y_x, Y_y); 
   *y = 0;
-  for (int W_x = 0; W_x < W->width; W_x++) {
-    const int X_x = Y_x - W->width / 2 + W_x;
-    if (X_x < 0 || X_x >= X->width)
+  for (int W_x = 0; W_x < W.width; W_x++) {
+    const int X_x = Y_x - W.width / 2 + W_x;
+    if (X_x < 0 || X_x >= X.width)
       continue;
-    for (int W_y = 0; W_y < W->height; W_y++) {
-      const int X_y = Y_y - W->height / 2 + W_y;
-      if (X_y < 0 || X_y >= X->height)
+    for (int W_y = 0; W_y < W.height; W_y++) {
+      const int X_y = Y_y - W.height / 2 + W_y;
+      if (X_y < 0 || X_y >= X.height)
         continue;
-      *y += (*W->At(W_x, W_y)) * (*X->At(X_x, X_y));
+      *y += (*W.At(W_x, W_y)) * (*X.At(X_x, X_y));
     }
   }
 }
