@@ -12,11 +12,6 @@ cuda_add_executable(test_convolution
   test/test_convolution.cu)
 target_link_libraries(test_convolution ${OpenCV_LIBS})
 
-cuda_add_executable(live_camera_filter src/live_camera_filter.cu)
-target_link_libraries(live_camera_filter ${OpenCV_LIBS})
-
-cuda_add_executable(test_tensor 
-  src/tensor.cu
-  test/test_tensor.cu)
-
 cuda_add_executable(test_cuda_sort test/test_cuda_sort.cu)
+
+cuda_add_executable(test_cuda_hog test/test_cuda_hog.cu)
