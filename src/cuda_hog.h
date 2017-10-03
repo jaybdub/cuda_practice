@@ -14,7 +14,7 @@ typedef struct {
   size_t width;
   size_t depth;
   float *data;
-  float *cuda_data;
+  float *data_device;
 } image_float32_t;
 
 CUDA_CALLABLE inline size_t image_float32_count(const image_float32_t & image)
@@ -32,20 +32,20 @@ void image_float32_malloc(image_float32_t & image)
   image.data = (float*) malloc(image_float32_size(image));
 }
 
-void image_float32_cuda_malloc(image_float32_t & image) 
+void image_float32_malloc_device(image_float32_t & image) 
 {
-  cudaMalloc(&image.cuda_data, image_float32_size(image));
+  cudaMalloc(&image.data_device, image_float32_size(image));
 }
 
 void image_float32_update_host(image_float32_t & image)
 {
-  cudaMemcpy(image.data, image.cuda_data, image_float32_size(image),
+  cudaMemcpy(image.data, image.data_device, image_float32_size(image),
       cudaMemcpyDeviceToHost);
 }
 
 void image_float32_update_device(image_float32_t & image)
 {
-  cudaMemcpy(image.cuda_data, image.data, image_float32_size(image),
+  cudaMemcpy(image.data_device, image.data, image_float32_size(image),
       cudaMemcpyHostToDevice);
 }
 
@@ -99,28 +99,28 @@ __global__ void hog_gradient_cuda_kernel(image_float32_t image,
   // check boundary condition
   if (i < 1 || i > image.height - 2 || j < 1 || j > image.width - 2)
   {
-    grad.cuda_data[image_float32_index(grad, i, j, 0)] = 0;
-    grad.cuda_data[image_float32_index(grad, i, j, 1)] = 0;
+    grad.data_device[image_float32_index(grad, i, j, 0)] = 0;
+    grad.data_device[image_float32_index(grad, i, j, 1)] = 0;
     return;
   }
 
   // compute gradient
-  float *g1 = &grad.cuda_data[image_float32_index(grad, i, j, 0)];
-  float *g2 = &grad.cuda_data[image_float32_index(grad, i, j, 1)];
-  *g1 = image.cuda_data[image_float32_index(image, i + 1, j, 0)]
-    - image.cuda_data[image_float32_index(image, i - 1, j, 0)];
-  *g2 = image.cuda_data[image_float32_index(image, i, j + 1, 0)]
-    - image.cuda_data[image_float32_index(image, i, j - 1, 0)];
+  float *g1 = &grad.data_device[image_float32_index(grad, i, j, 0)];
+  float *g2 = &grad.data_device[image_float32_index(grad, i, j, 1)];
+  *g1 = image.data_device[image_float32_index(image, i + 1, j, 0)]
+    - image.data_device[image_float32_index(image, i - 1, j, 0)];
+  *g2 = image.data_device[image_float32_index(image, i, j + 1, 0)]
+    - image.data_device[image_float32_index(image, i, j - 1, 0)];
 }
 
 void hog_gradient_cuda(image_float32_t & image, image_float32_t & grad)
 {
   // allocate and copy image
-  image_float32_cuda_malloc(image);
+  image_float32_malloc_device(image);
   image_float32_update_device(image);
 
   // allocate gradient
-  image_float32_cuda_malloc(grad);
+  image_float32_malloc_device(grad);
 
   // run kernel
   dim3 threadsPerBlock(image.height, image.width);
@@ -130,8 +130,8 @@ void hog_gradient_cuda(image_float32_t & image, image_float32_t & grad)
   image_float32_update_host(grad);
 
   // release gpu memory
-  cudaFree(grad.cuda_data);
-  cudaFree(image.cuda_data);
+  cudaFree(grad.data_device);
+  cudaFree(image.data_device);
 }
 
 /**
