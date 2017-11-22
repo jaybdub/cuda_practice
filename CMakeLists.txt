@@ -1,17 +1,20 @@
-cmake_minimum_required(VERSION 3.5)
-project(cuda_practice)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-find_package(CUDA REQUIRED)
-find_package(OpenCV REQUIRED)
+project(cuda_practice LANGUAGES CXX CUDA)
 
-set(CUDA_NVCC_FLAGS -std=c++11)
+set(CMAKE_CXX_STANDARD 11)
 
 include_directories(${PROJECT_SOURCE_DIR})
 
-cuda_add_executable(test_convolution
-  test/test_convolution.cu)
-target_link_libraries(test_convolution ${OpenCV_LIBS})
+# OPENCV
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
-cuda_add_executable(test_cuda_sort test/test_cuda_sort.cu)
+add_library(argument_parser src/argument_parser.cpp)
 
-cuda_add_executable(test_cuda_hog test/test_cuda_hog.cu)
+add_executable(main src/main.cu)
+set_target_properties(main PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(main ${OpenCV_LIBS} argument_parser)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CUDA_FLAGS_DEBUG "-g -G")
