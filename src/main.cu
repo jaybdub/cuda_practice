@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cuda.h>
 #include <opencv2/opencv.hpp>
+#include <opencv2/core/core.hpp>
 #include "src/argument_parser.h"
 #include <string>
 #include <sstream>
@@ -10,6 +11,44 @@
 
 using namespace std;
 
+
+__global__ void GrayKernel(uchar * dst, uchar * src, size_t width, size_t
+    height, size_t channels)
+
+{
+  const int x = blockIdx.x * blockDim.x + threadIdx.x;
+  const int y = blockIdx.y * blockDim.y + threadIdx.y;
+  if (x > width)
+    return;
+  if (y > height)
+    return;
+
+  const int sy_src = width * channels;
+  const int sx_src = channels;
+  const int sy_dst = width;
+  int value = 0;
+  for (int i = 0; i < channels; i++)
+    value += src[y * sy_src + x * sx_src + i];
+  dst[y * sy_dst + x] = value / channels;
+}
+
+void GrayGPU(cv::Mat & dst, cv::Mat & src)
+{
+  const int width = dst.cols;
+  const int height = dst.rows;
+  const int channels = 3;
+  uchar * d_dst, * d_src;
+  const size_t dst_size = width * height * sizeof(uchar);
+  const size_t src_size = channels * dst_size;
+  cudaMalloc(&d_dst, dst_size);
+  cudaMalloc(&d_src, src_size);
+  cudaMemcpy(d_src, src.data, src_size, cudaMemcpyHostToDevice);
+  const size_t thread_dim = 32;
+  dim3 blocks(1 + width / thread_dim, 1 + height / thread_dim); 
+  dim3 threads(thread_dim, thread_dim);
+  GrayKernel<<<blocks, threads>>>(d_dst, d_src, width, height, channels);
+  cudaMemcpy(dst.data, d_dst, dst_size, cudaMemcpyDeviceToHost);
+}
 
 __global__ void BlurKernel(uchar * dst, uchar * src, size_t width, size_t height, size_t channels, int ksize)
 {
@@ -110,12 +149,16 @@ int main(int argc, char * argv[])
   cv::VideoCapture cap(0);
   cv::Mat img;
   cv::Mat blurred;
+  cv::Mat gray;
 
   stringstream ss;
   ss << argset.GetArgument("ksize")->GetValue();
   int ksize;
   ss >> ksize;
   cout << "Kernel size: " << ksize << endl;
+  cv::namedWindow("Image", 1);
+  cv::namedWindow("Gray", 1);
+
 
   while (true) 
   {
@@ -123,11 +166,17 @@ int main(int argc, char * argv[])
       break;
    
     blurred.create(img.rows, img.cols, img.type());
-    BlurGPU(blurred, img, 30);
+    gray.create(img.rows, img.cols, CV_8UC1);
+
+    GrayGPU(gray, img);
+    BlurGPU(blurred, img, ksize);
     // Blur(blurred.data, img.data, img.cols, img.rows, 3, 10);
 
+    cv::putText(gray, "Grayscale Image", cv::Point(10, 10), cv::FONT_HERSHEY_PLAIN,
+        1, cv::Scalar(150));
     cv::imshow("Image", img);
-    cv::imshow("Blurred", blurred);
+    // cv::imshow("Blurred", blurred);
+    cv::imshow("Gray", gray);
 
     if (cv::waitKey(1) == 'q')
       break;
